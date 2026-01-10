@@ -1,53 +1,79 @@
 # Google Sheet Setup Guide
 
-## Recommended Sheet Structure
+## Your Current Structure
 
-Your Google Sheets should have these columns (you can add more as needed):
+Both your Fintech and HealthTech sheets have these 4 tabs:
 
-| Column | Header | Description | Example |
-|--------|--------|-------------|---------|
-| A | Company Name | Name of the company | "Stripe" |
-| B | Website | Company website | "https://stripe.com" |
-| C | LinkedIn | LinkedIn company page | "https://linkedin.com/company/stripe" |
-| D | Contact Name | Design contact name | "Jane Doe" |
-| E | Contact Title | Their job title | "Senior UX Designer" |
-| F | Contact Email | Email address | "jane@stripe.com" |
-| G | Status | Outreach status | "Reached Out" |
-| H | Notes | Additional notes | "Met at conference" |
+### 1. Contacts Tab
+**Purpose**: Track individual design contacts for networking
 
-## Setting Up Your Sheets
+| Column | Header | What it's for |
+|--------|--------|---------------|
+| A | Company | Where they work |
+| B | Name | Contact's full name |
+| C | Role/Title | Their job title |
+| D | LinkedIn Profile | Their personal LinkedIn URL |
+| E | Background Notes | Info about them |
+| F | Contact Status | Networking status |
+| G | Last Outreach | Date you last contacted them |
+| H | Notes | Additional notes |
 
-### Option 1: Create from scratch
+**Used by**: `add_contact.py`, `update_contact.py`
 
-1. Open your Google Sheet
-2. Add the headers in row 1 (see table above)
-3. Format the header row (bold, background color, etc.)
-4. That's it! The scripts will add rows below
+### 2. New England Tab
+**Purpose**: Track companies in New England region
 
-### Option 2: Copy this template
+| Column | Header | What it's for |
+|--------|--------|---------------|
+| A | Company | Company name |
+| B | Location | City, State |
+| C | Focus Area | What they do |
+| D | AI/Innovation | AI-related info |
+| E | Website/LinkedIn | Company website or LinkedIn |
+| F | Contact Name | Person at company |
+| G | Contact Role | Their role |
+| H | Contact Info | Email/phone |
+| I | Outreach Status | Research status |
+| J | Next Steps | What to do next |
+| K | Notes | Additional notes |
 
-Create a new sheet and copy-paste this structure:
+**Used by**: `add_company.py --region new-england`, `find_contacts.py --region new-england`
 
-```
-Company Name	Website	LinkedIn	Contact Name	Contact Title	Contact Email	Status	Notes
-```
+### 3. NYC Tab
+**Purpose**: Track companies in NYC region
 
-## Additional Columns (Optional)
+Same structure as New England tab (columns A-K)
 
-Feel free to add more columns for your needs:
+**Used by**: `add_company.py --region nyc`, `find_contacts.py --region nyc`
 
-- **Phone** (Column I): Contact phone number
-- **LinkedIn Profile** (Column J): Individual's LinkedIn
-- **Date Added** (Column K): When you added them
-- **Last Contact** (Column L): Last time you reached out
-- **Next Follow-up** (Column M): When to follow up
-- **Priority** (Column N): High/Medium/Low
-- **Referral** (Column O): Who referred you
+### 4. Organization Tab
+**Purpose**: Track organizations and networking events
+
+| Column | Header | What it's for |
+|--------|--------|---------------|
+| A | Organization/Event | Name of org or event |
+| B | Location | Where it's located |
+| C | Type | Professional Org, Conference, Meetup, etc. |
+| D | Description | What it's about |
+| E | Timing/Frequency | When it happens |
+| F | Contact/Website | How to reach them |
+| G | Notes | Additional notes |
+
+**Used by**: `add_organization.py`
 
 ## Important Notes
 
-1. **Don't delete the header row** - The scripts expect headers in row 1
-2. **Sheet tab name** - Note the name of your tab (shown at bottom of Google Sheets). Update this in `config.py`:
+1. **Don't change tab names** - Scripts expect these exact names:
+   - "Contacts"
+   - "New England"
+   - "NYC"
+   - "Organization"
+
+2. **Don't delete headers** - Row 1 must have column headers
+
+3. **Don't rearrange columns** - Scripts expect columns in this exact order
+
+4. **You can add more columns** - Just add them after the last column (to the right)
    ```python
    FINTECH_SHEET_NAME = "Your Tab Name Here"
    ```

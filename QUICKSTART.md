@@ -1,150 +1,122 @@
-# Quick Start Guide 🚀
+# Quick Start Guide
 
-New to coding? Start here!
+Your sheets have 4 tabs. Here's how to use them:
 
-## Setup (Do this once)
+## Your Sheet Structure
 
-### 1. Open Terminal/Command Prompt
+Both Fintech and HealthTech have:
+1. **Contacts** - Individual design contacts (main networking tab)
+2. **New England** - Companies in New England
+3. **NYC** - Companies in NYC
+4. **Organization** - Networking events and organizations
 
-**Mac**: Press `Cmd + Space`, type "Terminal", press Enter
-**Windows**: Press `Win + R`, type "cmd", press Enter
-**Linux**: Press `Ctrl + Alt + T`
+## Common Workflows
 
-### 2. Navigate to this folder
+### Workflow 1: Add and Research a Company
 
 ```bash
-cd /path/to/networking
+# 1. Add company
+python add_company.py "Stripe" --tracker fintech --region new-england --location "San Francisco, CA"
+
+# 2. Research contacts
+python find_contacts.py "Stripe" --tracker fintech --region new-england
+
+# 3. Add contact you found
+python add_contact.py "Jane Doe" --company "Stripe" --tracker fintech \
+  --role "Senior UX Designer" --linkedin "https://linkedin.com/in/janedoe"
+
+# 4. Track outreach
+python update_contact.py "Jane Doe" --company "Stripe" --tracker fintech \
+  --status "Reached Out" --notes "Sent message on 1/10"
 ```
 
-(Replace `/path/to/networking` with where you saved this project)
-
-### 3. Install Python packages
+### Workflow 2: Add an Organization
 
 ```bash
-pip install -r requirements.txt
+python add_organization.py "UXPA Boston" --tracker fintech \
+  --location "Boston, MA" --type "Professional Organization" \
+  --contact "https://uxpaboston.org"
 ```
 
-Wait for it to finish (might take a minute).
+## Command Reference
 
-### 4. Get Google Sheets credentials
-
-1. Go to https://console.cloud.google.com/
-2. Create new project: "Networking Tracker"
-3. Enable "Google Sheets API"
-4. Create OAuth credentials (Desktop app)
-5. Download as `credentials.json`
-6. Put it in this folder
-
-**Need detailed steps?** See [README.md](README.md#step-3-set-up-google-sheets-api)
-
-### 5. Update config.py
-
-Open `config.py` in a text editor and check:
-- Sheet IDs are correct ✓
-- Sheet names match your tabs (probably "Sheet1")
-
-## Daily Use
-
-### Add a company
+### Companies (New England & NYC tabs)
 
 ```bash
-python add_company.py "Company Name" --tracker fintech
+# Add
+python add_company.py "Name" --tracker [fintech|healthtech] \
+  --region [new-england|nyc] --location "City, State"
+
+# Research
+python find_contacts.py "Name" --tracker [fintech|healthtech] \
+  --region [new-england|nyc]
+
+# List all needing research
+python find_contacts.py --all --tracker [fintech|healthtech] \
+  --region [new-england|nyc]
 ```
 
-Example:
-```bash
-python add_company.py "Stripe" --tracker fintech
-```
-
-### Research contacts
+### Contacts (Contacts tab)
 
 ```bash
-python find_contacts.py "Company Name" --tracker fintech
-```
+# Add
+python add_contact.py "Name" --company "Company" --tracker [fintech|healthtech] \
+  --role "Job Title" --linkedin "URL"
 
-This gives you LinkedIn URLs to search manually.
-
-### After finding contacts
-
-```bash
-python update_status.py "Company Name" --tracker fintech \
-  --contact "Jane Doe" \
-  --title "UX Designer" \
-  --status "Researched"
-```
-
-### After reaching out
-
-```bash
-python update_status.py "Company Name" --tracker fintech \
+# Update status
+python update_contact.py "Name" --company "Company" --tracker [fintech|healthtech] \
   --status "Reached Out"
+
+# View info
+python update_contact.py "Name" --company "Company" --tracker [fintech|healthtech] --show
 ```
 
-## Cheat Sheet
+### Organizations (Organization tab)
 
-| What you want to do | Command |
-|---------------------|---------|
-| Add new company | `python add_company.py "NAME" --tracker TYPE` |
-| Research company | `python find_contacts.py "NAME" --tracker TYPE` |
-| See all needing research | `python find_contacts.py --all --tracker TYPE` |
-| Add contact info | `python update_status.py "NAME" --tracker TYPE --contact "..." --title "..."` |
-| Update status | `python update_status.py "NAME" --tracker TYPE --status "..."` |
-| View company info | `python update_status.py "NAME" --tracker TYPE --show` |
+```bash
+python add_organization.py "Name" --tracker [fintech|healthtech] \
+  --location "Location" --type "Type"
+```
 
-**Replace:**
-- `NAME` = Company name (e.g., "Stripe")
-- `TYPE` = Either `fintech` or `healthtech`
+## Status Values
 
-## Status Options
+**Contacts:**
+- Not Contacted
+- Reached Out
+- Responded
+- Meeting Scheduled
+- Follow Up
+- Not Interested
 
-- `To Research` → Need to find contacts
-- `Researched` → Found contacts
-- `Reached Out` → Sent message
-- `Responded` → They replied!
-- `Meeting Scheduled` → Meeting set up
-- `Follow Up` → Need to follow up
-- `Not Interested` → Not pursuing
-
-## Common Errors
-
-**"credentials.json not found"**
-→ Download it from Google Cloud Console
-
-**"Company not found"**
-→ Check spelling, use exact name from sheet
-
-**"Permission denied"**
-→ Re-run and grant permissions in browser
-
-## Tips
-
-- Copy-paste company names from your sheet to avoid typos
-- Use quotes around names: `"Company Name"` not `Company Name`
-- Check your Google Sheet after each command to see changes
-- Tab completion works! Type `python add_` then press Tab
+**Companies:**
+- To Research
+- Researching
+- Contacted
+- In Progress
 
 ## Example Session
 
 ```bash
-# Add 3 companies
-python add_company.py "Stripe" --tracker fintech
-python add_company.py "Square" --tracker fintech
-python add_company.py "Plaid" --tracker fintech
+# Morning: Add companies
+python add_company.py "Plaid" --tracker fintech --region new-england --location "SF, CA"
 
-# Research first one
-python find_contacts.py "Stripe" --tracker fintech
-# (Go to LinkedIn, find Jane Doe - Senior UX Designer)
+# Afternoon: Research
+python find_contacts.py "Plaid" --tracker fintech --region new-england
+# [Search LinkedIn manually]
+python add_contact.py "Sarah Lee" --company "Plaid" --tracker fintech \
+  --role "Design Lead" --linkedin "https://linkedin.com/in/sarahlee"
 
-# Add contact
-python update_status.py "Stripe" --tracker fintech \
-  --contact "Jane Doe" \
-  --title "Senior UX Designer" \
-  --status "Researched"
+# Evening: Reach out
+python update_contact.py "Sarah Lee" --company "Plaid" --tracker fintech \
+  --status "Reached Out" --notes "Sent InMail"
 
-# Reach out via LinkedIn/email, then:
-python update_status.py "Stripe" --tracker fintech \
-  --status "Reached Out" \
-  --notes "Sent LinkedIn message on 1/10"
+# Next day: They responded!
+python update_contact.py "Sarah Lee" --company "Plaid" --tracker fintech \
+  --status "Responded" --notes "Scheduling call"
 ```
 
-Need more help? Check the full [README.md](README.md)
+## Full Documentation
+
+- Setup: [CREDENTIALS_SETUP.md](CREDENTIALS_SETUP.md)
+- Full guide: [README.md](README.md)
+- Sheet structure: [SHEET_SETUP.md](SHEET_SETUP.md)

@@ -83,16 +83,30 @@ A browser window will open asking you to:
 
 The script will create a `token.json` file that saves your login for future use.
 
-### Step 4: Configure Your Sheets
+### Step 4: Configure Your Sheets (Optional)
 
-Open `config.py` and update the sheet names if needed:
+The sheet IDs are already configured with defaults. If you want to customize settings, you have two options:
 
-```python
-FINTECH_SHEET_NAME = "Sheet1"      # Update to your actual tab name
-HEALTHTECH_SHEET_NAME = "Sheet1"   # Update to your actual tab name
-```
+#### Option A: Use .env file (Recommended)
 
-To find your sheet name, open your Google Sheet and look at the tab at the bottom.
+1. Copy the example file:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit `.env` and update the sheet tab names if needed:
+   ```
+   FINTECH_SHEET_NAME=Sheet1
+   HEALTHTECH_SHEET_NAME=Sheet1
+   ```
+
+The `.env` file is already in `.gitignore` so your customizations stay private.
+
+#### Option B: Edit config.py directly
+
+Open `config.py` and the defaults will be used if no `.env` file exists.
+
+To find your sheet tab name, open your Google Sheet and look at the tab name at the bottom.
 
 ## How to Use
 
@@ -263,10 +277,36 @@ Open `config.py` and update the sheet names to match your actual Google Sheet ta
 
 ## Privacy & Security
 
-- `credentials.json` and `token.json` contain sensitive information
-- They are already in `.gitignore` so they won't be committed to git
-- **Never share these files or commit them to GitHub!**
-- If you accidentally share them, revoke access in [Google Cloud Console](https://console.cloud.google.com/)
+### Files That NEVER Go in GitHub (Already in .gitignore)
+
+- **`credentials.json`** - OAuth credentials from Google Cloud. Download this yourself, keep it LOCAL only.
+- **`token.json`** - Auto-generated authentication token. Stays LOCAL only.
+- **`.env`** - Your personal configuration overrides. Stays LOCAL only.
+
+These files are already in `.gitignore` so Git will refuse to commit them. If GitHub is blocking an upload mentioning secrets, that's **protecting you** - you shouldn't upload those files anyway!
+
+### Files That ARE Safe to Commit
+
+- ✅ All Python scripts (`.py` files)
+- ✅ Documentation (`.md` files)
+- ✅ `config.py` - Contains only default Sheet IDs (already public in your URLs)
+- ✅ `.env.example` - Template with no actual secrets
+- ✅ `requirements.txt` - List of packages
+
+### What Each User Needs
+
+When someone clones this repo, they need to:
+1. Get their own `credentials.json` from Google Cloud Console
+2. Place it in the project folder (never commit it!)
+3. Run scripts - this creates their own `token.json`
+4. Optionally create their own `.env` file with their sheet IDs
+
+### If Credentials Get Compromised
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Navigate to "APIs & Services" → "Credentials"
+3. Delete the compromised OAuth client ID
+4. Create a new one and download new `credentials.json`
 
 ## Next Steps
 

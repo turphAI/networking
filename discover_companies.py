@@ -489,7 +489,7 @@ Filters:
                 if suggestions:
                     print(f"\n   python add_company.py '{suggestions[0]['name']}' --tracker {tracker} --region {region} \\")
                     print(f"     --location '{args.region.title()}, [State]' \\")
-                    print(f"     --focus-area '{suggestions[0].get('focus', '')}}'")
+                    print(f"     --focus-area '{suggestions[0].get('focus', '')}'")
             else:
                 print(f"\n⚠️  No companies match your filters")
 

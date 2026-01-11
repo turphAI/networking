@@ -16,10 +16,10 @@ HEALTHTECH_SHEET_ID = os.getenv('HEALTHTECH_SHEET_ID', '1Y4djqEJoGqLuxLaMlDpa5DK
 
 # Tab names within each spreadsheet
 # Both Fintech and HealthTech have the same tab structure
-CONTACTS_TAB = 'Contacts'
+CONTACTS_TAB = 'Design Contacts'
 NEW_ENGLAND_TAB = 'New England'
 NYC_TAB = 'NYC'
-ORGANIZATION_TAB = 'Organization'
+ORGANIZATION_TAB = 'Organizations & Events'
 
 # Column mappings for Contacts tab
 # Columns: Company | Name | Role/Title | LinkedIn Profile | Background Notes | Contact Status | Last Outreach | Notes

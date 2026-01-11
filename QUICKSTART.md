@@ -62,6 +62,48 @@ python discover_and_import.py --industry fintech --region boston --dry-run
 - Filter by "Funding Stage" → Select "Series-B", "Series-C", etc.
 - Prioritize which companies to research based on these attributes
 
+### Workflow 4: Deep Company Research with Markdown Files (NEW!)
+
+Create individual markdown files for detailed company research:
+
+```bash
+# Create research file from Google Sheet data
+python create_company_research.py "Circle" --from-sheet --tracker fintech --region new-england
+
+# Create blank research file
+python create_company_research.py "New Company" --tracker fintech
+
+# List all research files
+python list_research.py
+
+# List by tracker
+python list_research.py --tracker fintech
+
+# Search research files
+python list_research.py --search "series b"
+
+# Open a research file
+open research/fintech/circle.md
+# or
+code research/fintech/circle.md
+```
+
+**What this gives you:**
+- Individual markdown file per company (in `research/fintech/` or `research/healthcare/`)
+- Pre-filled with data from your Google Sheet
+- Structured template for deep research notes
+- Sections for: products, technology, UX opportunities, contacts, outreach strategy, meeting notes
+- Track detailed conversations and follow-ups
+
+**Recommended workflow:**
+1. Import companies to Google Sheets (Workflow 3)
+2. Filter to find interesting companies
+3. Create research files for top candidates
+4. Fill out research notes and strategy
+5. Track outreach and meetings in the markdown file
+
+See [research/README.md](research/README.md) for full documentation.
+
 ## Command Reference
 
 ### Companies (New England & NYC tabs)

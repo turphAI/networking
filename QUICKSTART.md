@@ -38,6 +38,30 @@ python add_organization.py "UXPA Boston" --tracker fintech \
   --contact "https://uxpaboston.org"
 ```
 
+### Workflow 3: Auto-Discover and Import Companies (NEW!)
+
+```bash
+# Discover and import medium-sized fintech companies in Boston
+python discover_and_import.py --industry fintech --region boston --filter size=medium
+
+# Import Series B+ healthtech companies in NYC
+python discover_and_import.py --industry healthtech --region nyc --filter min_funding=series-b
+
+# Preview first (dry run)
+python discover_and_import.py --industry fintech --region boston --dry-run
+```
+
+**What this does:**
+- Finds curated companies matching your filters
+- Automatically adds them to your Google Sheet
+- Includes metadata (size, funding) for filtering in Google Sheets
+
+**Then filter in Google Sheets:**
+- Click "Create a filter" button in sheets
+- Filter by "Company Size" column → Select "Medium" or "Large"
+- Filter by "Funding Stage" → Select "Series-B", "Series-C", etc.
+- Prioritize which companies to research based on these attributes
+
 ## Command Reference
 
 ### Companies (New England & NYC tabs)

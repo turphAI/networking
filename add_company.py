@@ -15,7 +15,8 @@ from company_researcher import CompanyResearcher
 import config
 
 
-def add_company(company_name, tracker_type, region, location='', focus_area='', ai_innovation=''):
+def add_company(company_name, tracker_type, region, location='', focus_area='',
+                ai_innovation='', company_size='', funding_stage=''):
     """
     Add a company to the specified tracker and region
 
@@ -26,6 +27,8 @@ def add_company(company_name, tracker_type, region, location='', focus_area='', 
         location: City/state of company (optional)
         focus_area: What the company focuses on (optional)
         ai_innovation: AI/Innovation info (optional)
+        company_size: Company size (startup, small, medium, large, enterprise)
+        funding_stage: Funding stage (seed, series-a, series-b, etc.)
     """
     print(f"\n📋 Adding {company_name} to {tracker_type} tracker ({region})...")
 
@@ -68,7 +71,8 @@ def add_company(company_name, tracker_type, region, location='', focus_area='', 
 
     # Prepare row data matching your column structure
     # Columns: Company | Location | Focus Area | AI/Innovation | Website/LinkedIn |
-    #          Contact Name | Contact Role | Contact Info | Outreach Status | Next Steps | Notes
+    #          Contact Name | Contact Role | Contact Info | Outreach Status | Next Steps | Notes |
+    #          Company Size | Funding Stage
     new_row = [
         company_name,                           # A: Company
         location,                               # B: Location
@@ -80,12 +84,14 @@ def add_company(company_name, tracker_type, region, location='', focus_area='', 
         '',                                     # H: Contact Info
         'To Research',                          # I: Outreach Status
         'Find design contacts',                 # J: Next Steps
-        'Added via automation'                  # K: Notes
+        'Added via automation',                 # K: Notes
+        company_size.title() if company_size else '',  # L: Company Size
+        funding_stage.title() if funding_stage else '' # M: Funding Stage
     ]
 
     # Add to sheet
     print("📝 Adding to Google Sheet...")
-    result = sheets.append_row(sheet_id, f"{sheet_name}!A:K", new_row)
+    result = sheets.append_row(sheet_id, f"{sheet_name}!A:M", new_row)
 
     if result:
         print(f"✅ Successfully added {company_name} to {sheet_name}!")
@@ -152,6 +158,18 @@ Examples:
         default='',
         help='AI/Innovation information'
     )
+    parser.add_argument(
+        '--size',
+        choices=['startup', 'small', 'medium', 'large', 'enterprise'],
+        default='',
+        help='Company size (for filtering in sheets)'
+    )
+    parser.add_argument(
+        '--funding',
+        choices=['seed', 'series-a', 'series-b', 'series-c', 'series-d', 'series-e', 'series-f', 'public', 'acquired'],
+        default='',
+        help='Funding stage (for filtering in sheets)'
+    )
 
     args = parser.parse_args()
 
@@ -162,7 +180,9 @@ Examples:
             args.region,
             args.location,
             getattr(args, 'focus_area'),
-            args.ai
+            args.ai,
+            args.size,
+            args.funding
         )
     except Exception as e:
         print(f"\n❌ Error: {e}")

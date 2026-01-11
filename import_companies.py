@@ -4,11 +4,11 @@ Import Companies Script
 Batch import companies from a CSV file
 
 CSV Format (comma-separated):
-Company,Location,Focus Area,AI/Innovation,Website
+Company,Location,Focus Area,AI/Innovation,Website,Size,Funding
 
 Example CSV content:
-Stripe,San Francisco CA,Payment processing,Using AI for fraud detection,https://stripe.com
-Plaid,San Francisco CA,Financial data APIs,ML for transaction categorization,https://plaid.com
+Stripe,San Francisco CA,Payment processing,Using AI for fraud detection,https://stripe.com,Enterprise,Series-H
+Plaid,San Francisco CA,Financial data APIs,ML for transaction categorization,https://plaid.com,Large,Series-D
 
 Usage:
     python import_companies.py companies.csv --tracker fintech --region new-england
@@ -117,7 +117,8 @@ def import_companies_from_csv(csv_file, tracker_type, region, dry_run=False):
 
         # Prepare row data
         # Columns: Company | Location | Focus Area | AI/Innovation | Website/LinkedIn |
-        #          Contact Name | Contact Role | Contact Info | Outreach Status | Next Steps | Notes
+        #          Contact Name | Contact Role | Contact Info | Outreach Status | Next Steps | Notes |
+        #          Company Size | Funding Stage
         new_row = [
             company_name,                                   # A: Company
             company_data.get('Location', ''),              # B: Location
@@ -129,7 +130,9 @@ def import_companies_from_csv(csv_file, tracker_type, region, dry_run=False):
             '',                                             # H: Contact Info
             'To Research',                                  # I: Outreach Status
             'Find design contacts',                         # J: Next Steps
-            'Imported via CSV'                              # K: Notes
+            'Imported via CSV',                             # K: Notes
+            company_data.get('Size', ''),                  # L: Company Size
+            company_data.get('Funding', '')                # M: Funding Stage
         ]
 
         if dry_run:
@@ -141,7 +144,7 @@ def import_companies_from_csv(csv_file, tracker_type, region, dry_run=False):
             added_count += 1
         else:
             # Add to sheet
-            result = sheets.append_row(sheet_id, f"{sheet_name}!A:K", new_row)
+            result = sheets.append_row(sheet_id, f"{sheet_name}!A:M", new_row)
 
             if result:
                 print(f"{i}. ✅ Added: {company_name}")
@@ -181,10 +184,10 @@ def create_sample_csv():
     sample_file = 'sample_companies.csv'
 
     sample_data = [
-        ['Company', 'Location', 'Focus Area', 'AI/Innovation', 'Website'],
-        ['Stripe', 'San Francisco, CA', 'Payment processing', 'AI for fraud detection', 'https://stripe.com'],
-        ['Plaid', 'San Francisco, CA', 'Financial data APIs', 'ML for categorization', 'https://plaid.com'],
-        ['Square', 'San Francisco, CA', 'Commerce platform', 'ML for lending', 'https://squareup.com'],
+        ['Company', 'Location', 'Focus Area', 'AI/Innovation', 'Website', 'Size', 'Funding'],
+        ['Stripe', 'San Francisco, CA', 'Payment processing', 'AI for fraud detection', 'https://stripe.com', 'Enterprise', 'Series-H'],
+        ['Plaid', 'San Francisco, CA', 'Financial data APIs', 'ML for categorization', 'https://plaid.com', 'Large', 'Series-D'],
+        ['Square', 'San Francisco, CA', 'Commerce platform', 'ML for lending', 'https://squareup.com', 'Enterprise', 'Public'],
     ]
 
     try:

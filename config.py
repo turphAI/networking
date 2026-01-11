@@ -35,7 +35,9 @@ CONTACTS_COLUMNS = {
 }
 
 # Column mappings for New England and NYC tabs
-# Columns: Company | Location | Focus Area | AI/Innovation | Website/LinkedIn | Contact Name | Contact Role | Contact Info | Outreach Status | Next Steps | Notes
+# Columns: Company | Location | Focus Area | AI/Innovation | Website/LinkedIn |
+#          Contact Name | Contact Role | Contact Info | Outreach Status | Next Steps | Notes |
+#          Company Size | Funding Stage
 COMPANY_COLUMNS = {
     'company': 'A',
     'location': 'B',
@@ -47,7 +49,9 @@ COMPANY_COLUMNS = {
     'contact_info': 'H',
     'outreach_status': 'I',
     'next_steps': 'J',
-    'notes': 'K'
+    'notes': 'K',
+    'company_size': 'L',      # NEW: For filtering by company size
+    'funding_stage': 'M'       # NEW: For filtering by funding stage
 }
 
 # Column mappings for Organization tab

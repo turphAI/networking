@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """
 Discover Companies Script
-Search and discover companies to add to your networking tracker
+Search and discover companies from multiple sources with filtering
 
-This script helps you find companies from various sources:
-- Web search results
-- Company directories
-- Manual lists
+Data sources:
+- Y Combinator directory (scrapable)
+- Built In (Boston/NYC)
+- Crunchbase searches
+- Wellfound/AngelList
+- Google searches
 
 Usage:
-    python discover_companies.py --search "fintech companies boston"
-    python discover_companies.py --search "healthtech NYC" --limit 20
+    python discover_companies.py --industry fintech --region boston --suggest
+    python discover_companies.py --industry healthtech --region nyc --source yc
+    python discover_companies.py --industry fintech --region boston --filter size:medium funding:series-a
 """
 
 import argparse
@@ -18,6 +21,7 @@ import sys
 import requests
 from bs4 import BeautifulSoup
 import time
+import json
 
 
 class CompanyDiscoverer:
@@ -25,113 +29,303 @@ class CompanyDiscoverer:
 
     def __init__(self):
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
 
-    def search_builtin(self, region, industry, limit=50):
+    def search_yc_directory(self, industry_keywords, region_keywords=None, filters=None):
         """
-        Search Built In for companies
+        Search Y Combinator company directory
 
         Args:
-            region: 'boston' or 'nyc'
-            industry: 'fintech', 'healthtech', etc.
-            limit: Max number of companies to find
+            industry_keywords: Keywords to search (e.g., ['fintech', 'payments'])
+            region_keywords: Location keywords (e.g., ['boston', 'massachusetts'])
+            filters: Dict of filters (size, funding, etc.)
 
         Returns:
             List of company dictionaries
         """
-        print(f"\n🔍 Searching Built In {region.title()} for {industry} companies...")
+        print(f"\n🔍 Searching Y Combinator directory...")
 
-        # Built In URLs
-        builtin_urls = {
-            'boston': 'https://builtin.com/companies/location/boston',
-            'nyc': 'https://builtin.com/companies/location/new-york'
-        }
+        # YC directory URL
+        yc_url = "https://www.ycombinator.com/companies"
 
-        if region.lower() not in builtin_urls:
-            print(f"❌ Region must be 'boston' or 'nyc'")
+        try:
+            # For now, provide instructions for manual search
+            # (YC has anti-bot measures, but their directory is searchable)
+            print(f"\n📋 Y Combinator Search Instructions:")
+            print("=" * 60)
+            print(f"\n1. Visit: {yc_url}")
+            print(f"2. Use filters:")
+            if industry_keywords:
+                print(f"   - Industry: {', '.join(industry_keywords)}")
+            if region_keywords:
+                print(f"   - Region: {', '.join(region_keywords)}")
+            if filters:
+                if 'batch' in filters:
+                    print(f"   - Batch: {filters['batch']} (e.g., W24, S23)")
+                if 'size' in filters:
+                    print(f"   - Team size: {filters['size']}")
+
+            print(f"\n3. Browse results and export companies")
+            print(f"\n💡 Pro tip: YC companies often have strong design cultures!")
+
+            # Suggest some well-known YC companies
+            yc_suggestions = self._get_yc_companies_by_industry(industry_keywords)
+            if yc_suggestions:
+                print(f"\n🌟 Well-known YC {industry_keywords[0] if industry_keywords else ''} companies:")
+                for company in yc_suggestions[:10]:
+                    print(f"   - {company}")
+
             return []
 
-        # For now, return instructions for manual search
-        # (Built In has anti-scraping measures, so manual approach is more reliable)
+        except Exception as e:
+            print(f"⚠️  Error accessing YC directory: {e}")
+            return []
 
-        print("\n📋 Manual Discovery Instructions:")
-        print("=" * 60)
-        print(f"\n1. Go to: {builtin_urls[region.lower()]}")
-        print(f"2. Filter by industry: {industry}")
-        print(f"3. Browse companies and note:")
-        print("   - Company name")
-        print("   - Location")
-        print("   - What they do")
-        print("   - Their website")
-        print("\n4. Then add them using:")
-        print(f"   python add_company.py 'Company Name' --tracker [fintech|healthtech] \\")
-
-        region_map = {
-            'boston': 'new-england',
-            'nyc': 'nyc'
+    def _get_yc_companies_by_industry(self, keywords):
+        """Get curated list of YC companies by industry"""
+        yc_companies = {
+            'fintech': [
+                'Stripe', 'Plaid', 'Brex', 'Ramp', 'Mercury', 'Gusto',
+                'Lattice', 'Rippling', 'Deel', 'Checkr', 'Affin', 'Arc'
+            ],
+            'healthtech': [
+                'Ro', 'Hims & Hers', 'Cityblock Health', 'Carbon Health',
+                'Forward', 'Calibrate', 'K Health', 'Headway', 'Tia'
+            ],
+            'payments': ['Stripe', 'Brex', 'Ramp', 'Mercury', 'Plaid'],
+            'b2b': ['Lattice', 'Rippling', 'Deel', 'Gusto', 'Ramp'],
+            'healthcare': ['Ro', 'Carbon Health', 'Forward', 'Cityblock Health']
         }
-        print(f"     --region {region_map.get(region.lower(), 'new-england')} --location 'City, State'")
 
-        print("\n💡 Or use import_companies.py to batch import from a CSV")
+        results = set()
+        if keywords:
+            for keyword in keywords:
+                keyword_lower = keyword.lower()
+                if keyword_lower in yc_companies:
+                    results.update(yc_companies[keyword_lower])
 
-        return []
+        return list(results)
 
-    def generate_search_urls(self, industry, region):
+    def search_wellfound(self, industry, region, filters=None):
         """
-        Generate useful search URLs for finding companies
+        Generate Wellfound (AngelList) search URLs
 
         Args:
-            industry: 'fintech', 'healthtech', etc.
-            region: 'boston', 'nyc', etc.
+            industry: Industry tag
+            region: Location
+            filters: Dict of filters (size, funding, etc.)
+        """
+        print(f"\n🔍 Generating Wellfound/AngelList search...")
+
+        # Build search URL
+        base_url = "https://wellfound.com/jobs"
+
+        # Map regions to Wellfound location IDs
+        location_map = {
+            'boston': 'boston',
+            'nyc': 'new-york-city',
+            'sf': 'san-francisco',
+            'remote': 'remote'
+        }
+
+        location = location_map.get(region.lower(), region)
+
+        # Build URL with filters
+        params = []
+        params.append(f"locations[]={location}")
+
+        # Add role filter for designers
+        params.append("role=Design")
+
+        # Add industry/market filters
+        industry_tags = {
+            'fintech': ['fintech', 'payments', 'banking', 'finance'],
+            'healthtech': ['health-tech', 'healthcare', 'digital-health']
+        }
+
+        if industry.lower() in industry_tags:
+            for tag in industry_tags[industry.lower()]:
+                params.append(f"markets[]={tag}")
+
+        # Add size filter
+        if filters and 'size' in filters:
+            size_map = {
+                'startup': '1-10',
+                'small': '11-50',
+                'medium': '51-200',
+                'large': '201-1000',
+                'enterprise': '1001+'
+            }
+            if filters['size'] in size_map:
+                params.append(f"company_size[]={size_map[filters['size']]}")
+
+        # Add funding filter
+        if filters and 'funding' in filters:
+            funding_map = {
+                'seed': 'seed',
+                'series-a': 'series-a',
+                'series-b': 'series-b',
+                'series-c': 'series-c+'
+            }
+            if filters['funding'] in funding_map:
+                params.append(f"stage[]={funding_map[filters['funding']]}")
+
+        url = f"{base_url}?{'&'.join(params)}"
+
+        print(f"\n🔗 Wellfound Search URL:")
+        print(f"   {url}")
+        print(f"\n💡 This shows design roles at {industry} companies in {region}")
+        print(f"   Click on companies to learn more about them")
+
+        return url
+
+    def search_crunchbase(self, industry, region, filters=None):
+        """
+        Generate Crunchbase search URL
+
+        Args:
+            industry: Industry category
+            region: Location
+            filters: Dict of filters
+        """
+        print(f"\n🔍 Generating Crunchbase search...")
+
+        base_url = "https://www.crunchbase.com/discover/organization.companies"
+
+        # Crunchbase has advanced search - generate URL
+        industry_map = {
+            'fintech': 'financial-services',
+            'healthtech': 'health-care'
+        }
+
+        category = industry_map.get(industry.lower(), industry)
+
+        print(f"\n🔗 Crunchbase Search:")
+        print(f"   {base_url}")
+        print(f"\n📋 Recommended filters:")
+        print(f"   - Categories: {category}")
+        print(f"   - Location: {region.title()}")
+
+        if filters:
+            print(f"   - Filters:")
+            if 'funding' in filters:
+                print(f"     * Funding: {filters['funding']}")
+            if 'size' in filters:
+                print(f"     * Company size: {filters['size']}")
+            if 'founded' in filters:
+                print(f"     * Founded after: {filters['founded']}")
+
+        print(f"\n💡 Note: Crunchbase requires account for advanced filtering")
+
+        return base_url
+
+    def generate_search_urls(self, industry, region, filters=None):
+        """
+        Generate comprehensive search URLs from all sources
+
+        Args:
+            industry: Industry to search
+            region: Region to search
+            filters: Optional filters dict
 
         Returns:
-            Dictionary of search URLs
+            Dict of search URLs
         """
-        urls = {
-            'Built In': f'https://builtin.com/companies?location={region}&industry={industry}',
-            'Crunchbase': f'https://www.crunchbase.com/discover/organization.companies/{industry}%20{region}',
-            'AngelList': f'https://angel.co/company-filters?locations=1986-{region}&markets={industry}',
-            'Google': f'https://www.google.com/search?q={industry}+companies+in+{region}',
+        urls = {}
+
+        # Built In
+        builtin_map = {
+            'boston': f'https://builtin.com/companies?location=boston&industries={industry}',
+            'nyc': f'https://builtin.com/companies?location=new-york&industries={industry}',
+            'sf': f'https://builtin.com/companies?location=san-francisco&industries={industry}'
         }
+        if region.lower() in builtin_map:
+            urls['Built In'] = builtin_map[region.lower()]
+
+        # Y Combinator
+        urls['Y Combinator'] = 'https://www.ycombinator.com/companies'
+
+        # Wellfound
+        urls['Wellfound'] = self.search_wellfound(industry, region, filters)
+
+        # Crunchbase
+        urls['Crunchbase'] = self.search_crunchbase(industry, region, filters)
+
+        # LinkedIn
+        linkedin_search = f'https://www.linkedin.com/search/results/companies/?keywords={industry}%20{region}'
+        urls['LinkedIn Companies'] = linkedin_search
+
+        # Google
+        google_query = f'{industry} companies {region}'
+        if filters and 'size' in filters:
+            google_query += f' {filters["size"]}'
+        urls['Google'] = f'https://www.google.com/search?q={google_query.replace(" ", "+")}'
 
         return urls
 
-    def suggest_companies(self, industry, region):
+    def suggest_companies(self, industry, region, filters=None):
         """
-        Suggest well-known companies to research
+        Suggest well-known companies with filtering
 
         Args:
             industry: 'fintech' or 'healthtech'
-            region: 'boston', 'nyc', etc.
+            region: 'boston', 'nyc', 'sf', etc.
+            filters: Dict of filters (size, funding, etc.)
         """
-        suggestions = {
+        all_suggestions = {
             'fintech': {
                 'boston': [
-                    'Circle', 'Toast', 'Flywire', 'Vestmark', 'Acacia',
-                    'Cybereason', 'DraftKings', 'Klaviyo', 'Wayfair'
+                    {'name': 'Circle', 'size': 'medium', 'funding': 'series-d', 'focus': 'Crypto payments'},
+                    {'name': 'Toast', 'size': 'large', 'funding': 'public', 'focus': 'Restaurant tech'},
+                    {'name': 'Flywire', 'size': 'large', 'funding': 'public', 'focus': 'Global payments'},
+                    {'name': 'Vestmark', 'size': 'medium', 'funding': 'private', 'focus': 'Wealth management'},
+                    {'name': 'DraftKings', 'size': 'enterprise', 'funding': 'public', 'focus': 'Sports betting'},
+                    {'name': 'Klaviyo', 'size': 'large', 'funding': 'public', 'focus': 'Marketing automation'},
+                    {'name': 'Acacia', 'size': 'small', 'funding': 'series-a', 'focus': 'SMB lending'},
+                    {'name': 'Carta', 'size': 'large', 'funding': 'series-f', 'focus': 'Equity management'},
                 ],
                 'nyc': [
-                    'Stripe', 'Plaid', 'Better', 'Ramp', 'Brex',
-                    'Carta', 'Chime', 'Robinhood', 'Square', 'Affirm'
+                    {'name': 'Stripe', 'size': 'enterprise', 'funding': 'series-h', 'focus': 'Payments infrastructure'},
+                    {'name': 'Plaid', 'size': 'large', 'funding': 'series-d', 'focus': 'Financial data'},
+                    {'name': 'Ramp', 'size': 'medium', 'funding': 'series-d', 'focus': 'Corporate cards'},
+                    {'name': 'Brex', 'size': 'medium', 'funding': 'series-d', 'focus': 'Corporate cards'},
+                    {'name': 'Carta', 'size': 'large', 'funding': 'series-f', 'focus': 'Equity management'},
+                    {'name': 'Better', 'size': 'medium', 'funding': 'series-e', 'focus': 'Mortgage'},
+                    {'name': 'Affirm', 'size': 'large', 'funding': 'public', 'focus': 'BNPL'},
+                    {'name': 'Robinhood', 'size': 'large', 'funding': 'public', 'focus': 'Trading'},
                 ],
                 'sf': [
-                    'Stripe', 'Plaid', 'Chime', 'Brex', 'Ramp',
-                    'Affirm', 'Square', 'Robinhood', 'Coinbase'
+                    {'name': 'Stripe', 'size': 'enterprise', 'funding': 'series-h', 'focus': 'Payments'},
+                    {'name': 'Plaid', 'size': 'large', 'funding': 'series-d', 'focus': 'Financial APIs'},
+                    {'name': 'Chime', 'size': 'large', 'funding': 'series-g', 'focus': 'Digital banking'},
+                    {'name': 'Square', 'size': 'enterprise', 'funding': 'public', 'focus': 'Commerce'},
+                    {'name': 'Coinbase', 'size': 'enterprise', 'funding': 'public', 'focus': 'Crypto'},
+                    {'name': 'Mercury', 'size': 'small', 'funding': 'series-b', 'focus': 'Business banking'},
                 ]
             },
             'healthtech': {
                 'boston': [
-                    'Flatiron Health', 'Kyruus', 'OM1', 'Zocdoc', 'Included Health',
-                    'Cedar', 'Rightway', 'Devoted Health', 'Ro'
+                    {'name': 'Flatiron Health', 'size': 'large', 'funding': 'acquired', 'focus': 'Oncology data'},
+                    {'name': 'Kyruus', 'size': 'medium', 'funding': 'series-e', 'focus': 'Provider search'},
+                    {'name': 'OM1', 'size': 'medium', 'funding': 'series-c', 'focus': 'Healthcare data'},
+                    {'name': 'Devoted Health', 'size': 'large', 'funding': 'series-e', 'focus': 'Medicare Advantage'},
+                    {'name': 'Included Health', 'size': 'large', 'funding': 'series-e', 'focus': 'Virtual care'},
                 ],
                 'nyc': [
-                    'Oscar Health', 'Zocdoc', 'Ro', 'Hims & Hers', 'Spring Health',
-                    'Headway', 'Cedar', 'K Health', 'Cityblock Health'
+                    {'name': 'Oscar Health', 'size': 'large', 'funding': 'public', 'focus': 'Health insurance'},
+                    {'name': 'Zocdoc', 'size': 'medium', 'funding': 'series-d', 'focus': 'Doctor booking'},
+                    {'name': 'Ro', 'size': 'medium', 'funding': 'series-d', 'focus': 'Telehealth'},
+                    {'name': 'Hims & Hers', 'size': 'large', 'funding': 'public', 'focus': 'Telehealth'},
+                    {'name': 'Spring Health', 'size': 'medium', 'funding': 'series-e', 'focus': 'Mental health'},
+                    {'name': 'Headway', 'size': 'small', 'funding': 'series-c', 'focus': 'Mental health'},
+                    {'name': 'Cedar', 'size': 'medium', 'funding': 'series-d', 'focus': 'Patient billing'},
                 ],
                 'sf': [
-                    'Oscar Health', 'Devoted Health', 'Omada Health', 'Livongo',
-                    'One Medical', 'Ro', 'Hims & Hers', 'Ginger'
+                    {'name': 'One Medical', 'size': 'large', 'funding': 'acquired', 'focus': 'Primary care'},
+                    {'name': 'Omada Health', 'size': 'medium', 'funding': 'series-e', 'focus': 'Chronic care'},
+                    {'name': 'Livongo', 'size': 'large', 'funding': 'acquired', 'focus': 'Diabetes care'},
+                    {'name': 'Ginger', 'size': 'small', 'funding': 'series-e', 'focus': 'Mental health'},
                 ]
             }
         }
@@ -139,27 +333,64 @@ class CompanyDiscoverer:
         industry_lower = industry.lower()
         region_lower = region.lower()
 
-        if industry_lower in suggestions and region_lower in suggestions[industry_lower]:
-            return suggestions[industry_lower][region_lower]
+        if industry_lower not in all_suggestions:
+            return []
 
-        return []
+        if region_lower not in all_suggestions[industry_lower]:
+            return []
+
+        companies = all_suggestions[industry_lower][region_lower]
+
+        # Apply filters
+        if filters:
+            filtered = companies
+
+            if 'size' in filters:
+                filtered = [c for c in filtered if c.get('size') == filters['size']]
+
+            if 'funding' in filters:
+                filtered = [c for c in filtered if filters['funding'] in c.get('funding', '')]
+
+            if 'min_funding' in filters:
+                # Filter by minimum funding stage
+                funding_order = ['seed', 'series-a', 'series-b', 'series-c', 'series-d', 'series-e', 'series-f', 'public']
+                min_stage = filters['min_funding']
+                if min_stage in funding_order:
+                    min_index = funding_order.index(min_stage)
+                    filtered = [c for c in filtered
+                               if any(stage in c.get('funding', '') for stage in funding_order[min_index:])]
+
+            return filtered
+
+        return companies
 
 
 def main():
     """Main function"""
     parser = argparse.ArgumentParser(
-        description='Discover companies for your networking tracker',
+        description='Discover companies from multiple sources with filtering',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Get discovery resources for fintech in Boston
-  python discover_companies.py --industry fintech --region boston
-
-  # Get healthtech companies in NYC
-  python discover_companies.py --industry healthtech --region nyc
-
-  # See well-known companies to add
+  # Get suggested companies
   python discover_companies.py --industry fintech --region boston --suggest
+
+  # Filter by size
+  python discover_companies.py --industry fintech --region nyc --suggest --filter size=medium
+
+  # Filter by funding stage
+  python discover_companies.py --industry healthtech --region boston --suggest --filter min_funding=series-b
+
+  # Get search URLs for all sources
+  python discover_companies.py --industry fintech --region nyc --urls
+
+  # Search Y Combinator directory
+  python discover_companies.py --industry fintech --source yc
+
+Filters:
+  size: startup, small, medium, large, enterprise
+  funding: seed, series-a, series-b, series-c, series-d, public
+  min_funding: series-a (shows companies at series-a and beyond)
         """
     )
 
@@ -178,69 +409,104 @@ Examples:
     parser.add_argument(
         '--suggest',
         action='store_true',
-        help='Show suggested well-known companies to add'
+        help='Show suggested well-known companies'
     )
     parser.add_argument(
         '--urls',
         action='store_true',
-        help='Generate search URLs for finding companies'
+        help='Generate search URLs for all sources'
+    )
+    parser.add_argument(
+        '--source',
+        choices=['yc', 'wellfound', 'crunchbase', 'builtin'],
+        help='Search specific source'
+    )
+    parser.add_argument(
+        '--filter',
+        action='append',
+        help='Apply filters (e.g., --filter size=medium --filter min_funding=series-a)'
     )
 
     args = parser.parse_args()
 
+    # Parse filters
+    filters = {}
+    if args.filter:
+        for f in args.filter:
+            if '=' in f:
+                key, value = f.split('=', 1)
+                filters[key] = value
+
     discoverer = CompanyDiscoverer()
 
     try:
+        # Search specific source
+        if args.source == 'yc':
+            industry_keywords = [args.industry]
+            region_keywords = [args.region]
+            discoverer.search_yc_directory(industry_keywords, region_keywords, filters)
+
+        elif args.source == 'wellfound':
+            discoverer.search_wellfound(args.industry, args.region, filters)
+
+        elif args.source == 'crunchbase':
+            discoverer.search_crunchbase(args.industry, args.region, filters)
+
         # Show suggested companies
-        if args.suggest:
-            suggestions = discoverer.suggest_companies(args.industry, args.region)
+        elif args.suggest or (not args.urls and not args.source):
+            suggestions = discoverer.suggest_companies(args.industry, args.region, filters)
 
             if suggestions:
-                print(f"\n📋 Well-known {args.industry} companies in {args.region.upper()}:")
+                filter_desc = ""
+                if filters:
+                    filter_parts = [f"{k}={v}" for k, v in filters.items()]
+                    filter_desc = f" (filtered by: {', '.join(filter_parts)})"
+
+                print(f"\n📋 {args.industry.title()} companies in {args.region.upper()}{filter_desc}:")
                 print("=" * 60)
+
                 for i, company in enumerate(suggestions, 1):
-                    print(f"{i:2}. {company}")
+                    name = company['name']
+                    size = company.get('size', 'unknown')
+                    funding = company.get('funding', 'unknown')
+                    focus = company.get('focus', '')
+
+                    print(f"\n{i:2}. {name}")
+                    print(f"    Size: {size.title()} | Funding: {funding.title()}")
+                    if focus:
+                        print(f"    Focus: {focus}")
 
                 print(f"\n💡 To add these companies:")
-
                 region_map = {
                     'boston': 'new-england',
                     'nyc': 'nyc',
-                    'sf': 'new-england'  # or create a new tab
+                    'sf': 'new-england'
                 }
 
                 tracker = args.industry
                 region = region_map.get(args.region, 'new-england')
 
-                print(f"\n   python add_company.py 'Company Name' --tracker {tracker} --region {region} \\")
-                print(f"     --location '{args.region.title()}, [State]'")
-
-                print(f"\n   Example:")
                 if suggestions:
-                    print(f"   python add_company.py '{suggestions[0]}' --tracker {tracker} --region {region} \\")
-                    print(f"     --location '{args.region.title()}, MA'")
+                    print(f"\n   python add_company.py '{suggestions[0]['name']}' --tracker {tracker} --region {region} \\")
+                    print(f"     --location '{args.region.title()}, [State]' \\")
+                    print(f"     --focus-area '{suggestions[0].get('focus', '')}}'")
             else:
-                print(f"\n⚠️  No suggestions available for {args.industry} in {args.region}")
+                print(f"\n⚠️  No companies match your filters")
 
         # Show search URLs
-        if args.urls or not args.suggest:
-            urls = discoverer.generate_search_urls(args.industry, args.region)
+        if args.urls:
+            urls = discoverer.generate_search_urls(args.industry, args.region, filters)
 
             print(f"\n🔗 Search URLs for {args.industry} companies in {args.region.upper()}:")
             print("=" * 60)
+
             for source, url in urls.items():
                 print(f"\n{source}:")
                 print(f"  {url}")
 
-            print("\n💡 Browse these sites to discover companies, then add them with:")
-            print("   python add_company.py 'Company Name' --tracker [fintech|healthtech] \\")
-            print("     --region [new-england|nyc] --location 'City, State'")
-
-        # Instructions for batch import
-        print("\n" + "=" * 60)
-        print("\n📝 Pro tip: Create a list of companies, then use batch import!")
-        print("   Create a CSV with columns: Company,Location,Focus Area")
-        print("   Then run: python import_companies.py companies.csv --tracker fintech --region nyc")
+        # Show all if no specific action
+        if not args.suggest and not args.urls and not args.source:
+            print(f"\nℹ️  Use --suggest to see company suggestions or --urls for search links")
 
     except Exception as e:
         print(f"\n❌ Error: {e}")
